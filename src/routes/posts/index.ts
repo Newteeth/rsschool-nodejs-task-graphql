@@ -35,9 +35,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<PostEntity> {
       const post = await fastify.db.posts.create(request.body);
-      if (post) return post;
-      reply.statusCode = 404;
-      throw new Error;
+      if (!post) {
+        reply.statusCode = 404;
+        throw new Error;
+      }
+      return post;  
     }
   );
 
@@ -50,9 +52,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<PostEntity> {
       const post = await fastify.db.posts.findOne({ key: 'id', equals: request.params.id });
-      if (post) return await fastify.db.posts.delete(request.params.id);;
-      reply.statusCode = 400;
-      throw new Error;
+      if (!post) {
+        reply.statusCode = 400;
+        throw new Error;
+      }
+      return await fastify.db.posts.delete(request.params.id);;
+      
     }
   );
 
@@ -65,14 +70,18 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<PostEntity> {
-      const posts = await fastify.db.posts.findMany();
-      posts.forEach(item => {
-        if (!request.params.id || request.params.id !== 'string') return reply.statusCode = 400;
-      });
-      const post = await fastify.db.posts.change(request.params.id, request.body);
-      if (post) return post;
-      reply.statusCode = 400;
-      throw new Error;
+      if (typeof request.params.id !== 'string') {
+        reply.statusCode = 400;
+        throw new Error;
+      }
+      const post = await fastify.db.posts.findOne({ key: 'id', equals: request.params.id });
+      if (!post) {
+        reply.statusCode = 400;
+        throw new Error;
+      }
+      return await fastify.db.posts.change(request.params.id, request.body);
+    
+      
     });
 }
 

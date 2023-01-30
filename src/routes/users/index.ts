@@ -52,15 +52,21 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply): Promise<UserEntity> {
       const posts = await fastify.db.posts.findMany();  
       const profile = await fastify.db.profiles.findOne({ key: 'id', equals: request.params.id });
+      const users = await fastify.db.users.findMany();
       const user = await fastify.db.users.findOne({ key: 'id', equals: request.params.id });
+      // const subscribedToUserIds = user?.subscribedToUserIds;
 
       if (typeof request.params.id !== 'string' || user === null) {
         reply.statusCode = 400;
-        throw new Error;
+        throw new Error('id error');
       }
-      if (!posts) {
+      if (!user) {
         reply.statusCode = 404;
-        throw new Error;
+        throw new Error('user error');
+      }
+      if (!posts ) {
+        reply.statusCode = 404;
+        throw new Error('post error');
       }
       posts.forEach(async item => {
         if (item.userId === user.id) {
@@ -68,23 +74,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         }
           
       });
-      if (!profile) {
-        reply.statusCode = 404;
-        throw new Error;
+      if (profile !== null) {
+        await fastify.db.profiles.delete(profile.id);
       }
-      await fastify.db.profiles.delete(request.params.id);
-
-      const users = await fastify.db.users.findMany();
       users.forEach(async (item, index) => {
         const booleanNumber = item.subscribedToUserIds.indexOf(request.params.id);
-        if (booleanNumber < 0) {
-          reply.statusCode = 404;
-          throw new Error;
-        }
-        item.subscribedToUserIds.splice(index, 1);
-        await fastify.db.users.change(item.id, item);
-        // const index = item.subscribedToUserIds.indexOf(request.params.id)
-        
+        if (booleanNumber >= 0) {
+          const indexSubscribed = item.subscribedToUserIds.indexOf(request.params.id)
+          item.subscribedToUserIds.splice(indexSubscribed, 1);
+          await fastify.db.users.change(item.id, item);
+        }                
       });
       return await fastify.db.users.delete(request.params.id);   
     }

@@ -21,9 +21,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<MemberTypeEntity> {
       const member =  await fastify.db.memberTypes.findOne({ key: 'id', equals: request.params.id});
-      if (member) return member;
-      reply.statusCode = 404;
-      throw new Error;
+      if (!member) {
+        reply.statusCode = 404;
+        throw new Error;     
+      }
+    return member;
     }
   );
 
@@ -36,17 +38,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<MemberTypeEntity> {
-      const members =await fastify.db.memberTypes.findMany();
-      members.forEach(item => {
-        if (!request.params.id || (typeof request.params.id !== 'string')) {
-          reply.statusCode = 400;
-          throw new Error;
-        }
-      });      
-      const member = await fastify.db.memberTypes.change(request.params.id, request.body);
-      if (member) return member;
-      reply.statusCode = 400;
-      throw new Error;
+      if (typeof request.params.id !== 'string') {
+        reply.statusCode = 400;
+        throw new Error;
+      }
+      const memberType = await fastify.db.memberTypes.findOne({ key: 'id', equals: request.params.id });
+      if (!memberType) {
+        reply.statusCode = 400;
+        throw new Error;
+      }
+      return await fastify.db.memberTypes.change(request.params.id, request.body);
     }
   );
 };
