@@ -51,7 +51,8 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       const posts = await fastify.db.posts.findMany();  
-      const profile = await fastify.db.profiles.findOne({ key: 'id', equals: request.params.id });
+      // const profile = await fastify.db.profiles.findOne({ key: 'id', equals: request.params.id });
+      const profiles = await fastify.db.profiles.findMany({ key: 'userId', equals: request.params.id });
       const users = await fastify.db.users.findMany();
       const user = await fastify.db.users.findOne({ key: 'id', equals: request.params.id });
       // const subscribedToUserIds = user?.subscribedToUserIds;
@@ -72,11 +73,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         if (item.userId === user.id) {
           await fastify.db.posts.delete(item.id);
         }
-          
       });
-      if (profile !== null) {
-        await fastify.db.profiles.delete(profile.id);
-      }
+      profiles.forEach(async item => {
+        await fastify.db.profiles.delete(item.id);
+      });     
+    
       users.forEach(async (item, index) => {
         const booleanNumber = item.subscribedToUserIds.indexOf(request.params.id);
         if (booleanNumber >= 0) {
