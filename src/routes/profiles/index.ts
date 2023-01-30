@@ -21,9 +21,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<ProfileEntity> {
       const profile = await fastify.db.profiles.findOne({ key: 'id', equals: request.params.id });
-      if (profile) return profile;
-      reply.statusCode = 404;
-      throw new Error;
+      if (!profile) {
+        reply.statusCode = 404;
+        throw new Error;
+      }
+      return profile;
     }
   );
 

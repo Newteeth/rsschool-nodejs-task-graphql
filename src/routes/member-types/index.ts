@@ -23,7 +23,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       const member =  await fastify.db.memberTypes.findOne({ key: 'id', equals: request.params.id});
       if (!member) {
         reply.statusCode = 404;
-        throw new Error;     
+        throw new Error;
       }
     return member;
     }

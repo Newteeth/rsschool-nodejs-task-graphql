@@ -6,7 +6,6 @@ import {
   subscribeBodySchema,
 } from './schemas';
 import type { UserEntity } from '../../utils/DB/entities/DBUsers';
-// import { ProfileEntity } from '../../utils/DB/entities/DBProfiles';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
@@ -24,9 +23,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       const user = await fastify.db.users.findOne({ key: 'id', equals: request.params.id });
-      if (user) return user;
-      reply.statusCode = 404;
-      throw new Error;
+      if (!user) {
+        reply.statusCode = 404;
+        throw new Error;
+      }
+      return user;
     }
   );
 
@@ -51,21 +52,19 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       const posts = await fastify.db.posts.findMany();  
-      // const profile = await fastify.db.profiles.findOne({ key: 'id', equals: request.params.id });
       const profiles = await fastify.db.profiles.findMany({ key: 'userId', equals: request.params.id });
       const users = await fastify.db.users.findMany();
       const user = await fastify.db.users.findOne({ key: 'id', equals: request.params.id });
-      // const subscribedToUserIds = user?.subscribedToUserIds;
 
       if (typeof request.params.id !== 'string' || user === null) {
         reply.statusCode = 400;
-        throw new Error('id error');
-      }
-      if (!user) {
-        reply.statusCode = 404;
-        throw new Error('user error');
+        throw new Error;
       }
       if (!posts ) {
+        reply.statusCode = 404;
+        throw new Error;
+      }
+      if (!user) {
         reply.statusCode = 404;
         throw new Error('post error');
       }
@@ -76,7 +75,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       });
       profiles.forEach(async item => {
         await fastify.db.profiles.delete(item.id);
-      });     
+      });
     
       users.forEach(async (item, index) => {
         const booleanNumber = item.subscribedToUserIds.indexOf(request.params.id);
@@ -84,9 +83,9 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
           const indexSubscribed = item.subscribedToUserIds.indexOf(request.params.id)
           item.subscribedToUserIds.splice(indexSubscribed, 1);
           await fastify.db.users.change(item.id, item);
-        }                
+        }
       });
-      return await fastify.db.users.delete(request.params.id);   
+      return await fastify.db.users.delete(request.params.id);
     }
   );
 
@@ -103,17 +102,15 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       const userId = await fastify.db.users.findOne({ key: 'id', equals: request.params.id });
       if (typeof request.params.id !== 'string') {
         reply.statusCode = 400;
-        throw new Error(`this is here`);
+        throw new Error;
       }
-      
       if (!user || !userId ) {
         reply.statusCode = 404;
-        throw new Error (`here`);
+        throw new Error;
       } else {
         user.subscribedToUserIds.push(userId.id);
         return await fastify.db.users.change(request.body.userId, user);
       }
-      
     }
   );
 
@@ -131,16 +128,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       const booleanCheck = user?.subscribedToUserIds.includes(request.params.id);
       if (typeof request.params.id !== 'string' || !booleanCheck) {
         reply.statusCode = 400;
-        throw new Error(`this is here`);
+        throw new Error;
       }
       if (!user || !userId ) {
         reply.statusCode = 404;
-        throw new Error (`here`);
+        throw new Error;
       } else {
         user.subscribedToUserIds.map((item, index) => {
           user.subscribedToUserIds.splice(index, 1);
         })
-        return await fastify.db.users.change(request.body.userId, user);       
+        return await fastify.db.users.change(request.body.userId, user);
       }
     }
   );
@@ -155,11 +152,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       const user = await fastify.db.users.findOne({ key: 'id', equals: request.params.id });
-      if (user) return await fastify.db.users.change(request.params.id , request.body);
-      reply.statusCode = 400;
-      throw new Error;
-
-      
+      if (!user) {
+        reply.statusCode = 400;
+        throw new Error;
+      } 
+      return await fastify.db.users.change(request.params.id , request.body);
     }
   );
 };

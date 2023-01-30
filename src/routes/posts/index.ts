@@ -19,10 +19,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<PostEntity> {
       const post = await fastify.db.posts.findOne({ key: 'id', equals: request.params.id });
-      if (post) return post;
-      reply.statusCode = 404;
-      throw new Error;
-      
+      if (!post) {
+        reply.statusCode = 404;
+        throw new Error;
+      }
+      return post;
     }
   );
 
@@ -56,8 +57,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         reply.statusCode = 400;
         throw new Error;
       }
-      return await fastify.db.posts.delete(request.params.id);;
-      
+      return await fastify.db.posts.delete(request.params.id);
     }
   );
 
@@ -80,8 +80,6 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         throw new Error;
       }
       return await fastify.db.posts.change(request.params.id, request.body);
-    
-      
     });
 }
 
